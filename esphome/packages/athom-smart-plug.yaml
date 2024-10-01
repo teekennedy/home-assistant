@@ -1,36 +1,44 @@
-ota:
-  platform: esphome
+# Clone and modified from https://github.com/athom-tech/esp32-configs/blob/main/athom-smart-plug.yaml
+dashboard_import:
+  package_import_url: github://teekennedy/home-assistant/esphome/packages/athom-smart-plug.yaml
 
-# Base config copied directly from github://athom-tech/esp32-configs/athom-smart-plug.yaml
-# I copied this because I can't !extend the buttons to be internal because they don't have an ID. Sad.
-#
-# packages:
-#   Athom_Technology.Smart_Plug_V3: github://athom-tech/esp32-configs/athom-smart-plug.yaml
 substitutions:
-  name: "instant-hot-smart-plug"
-  friendly_name: "Instant Hot Smart Plug"
-  # Allows ESP device to be automatically lined to an 'Area' in Home Assistant. Typically used for areas such as 'Lounge Room', 'Kitchen' etc  
-  room: "Kitchen"
+  # Default name
+  name: "athom-smart-plug-v3"
+  # Default friendly name   
+  friendly_name: "Athom Plug V3"
+  # Allows ESP device to be automatically linked to an 'Area' in Home Assistant. Typically used for areas such as 'Lounge Room', 'Kitchen' etc  
+  room: ""
+  # Description as appears in ESPHome & top of webserver page
   device_description: "athom esp32-c3 smart plug"
+  # Project Name
   project_name: "Athom Technology.Smart Plug V3"
   # Projection version denotes the release version of the yaml file, allowing checking of deployed vs latest version
-  project_version: "v1.0.2"
+  project_version: "v1.0.3"
+   # Restore the relay (GPO switch) upon reboot to state:
   relay_restore_mode: RESTORE_DEFAULT_OFF
+  # Set the update interval for sensors
   sensor_update_interval: 10s
   # Current Limit in Amps. AU Plug = 10. IL, BR, EU, UK, US Plug = 16.
   current_limit : "16"
-  # Define a domain for this device to use. i.e. .iot.home.lan (so device will appear as athom-smart-plug-v2.iot.home.lan in DNS/DHCP logs)
-  dns_domain: ".lan"
   # Set timezone of the smart plug. Useful if the plug is in a location different to the HA server. Can be entered in unix Country/Area format (i.e. "Australia/Sydney")
   timezone: ""
-  # Enables faster network connections, with last connected SSID being connected to and no full scan for SSID being undertaken
-  wifi_fast_connect: "true"
+  # Set the duration between the sntp service polling ntp.org servers for an update
+  sntp_update_interval: 6h
+  # Network time servers for your region, enter from lowest to highest priority. To use local servers update as per zones or countries at: https://www.ntppool.org/zone/@
+  sntp_server: "opnsense.lan"
+  # Define logging level: NONE, ERROR, WARN, INFO, DEBUG (Default), VERBOSE, VERY_VERBOSE
+  log_level: "INFO"
+  # Hide the ENERGY sensor that shows kWh consumed, but with no time period associated with it. Resets when device restarted and reflashed.
+  hide_energy_sensor: "true"
+  # Enable or disable the use of IPv6 networking on the device
+  ipv6_enable: "false"
 
 esphome:
   name: "${name}"
   friendly_name: "${friendly_name}"
+  comment: "${device_description}"
   area: "${room}"  
-  name_add_mac_suffix: false
   min_version: 2024.6.0
   project:
     name: "${project_name}"
@@ -51,46 +59,21 @@ esp32:
 preferences:
   flash_write_interval: 5min
 
+api:
+
+ota:
+  - platform: esphome
+
 logger:
+  level: ${log_level}
   baud_rate: 0
 
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_instant_hot_plug_password  # This spawns an AP with the device name and mac address with no password.
-  # Allow rapid re-connection to previously connect WiFi SSID, skipping scan of all SSID
-  fast_connect: "${wifi_fast_connect}"
-  # Define dns domain / suffix to add to hostname
-  domain: "${dns_domain}"
-
-# Options to use a static IP and disable mDNS
-  manual_ip:
-    static_ip: 10.69.100.10
-    # Set this to the IP address of the router. Often ends with .1
-    gateway: 10.69.100.1
-    # The subnet of the network. /25
-    subnet: 255.255.255.128
-
-# Disable mDNS - we're using ping to check whether this device is online or not.
-mdns:
-  disabled: true
-
-captive_portal:
-
-dashboard_import:
-  package_import_url: github://athom-tech/esp32-configs/athom-smart-plug.yaml
-
 uart:
-  # Workaround for invalid parity error in 2023.5.1 and onwards
-  # https://github.com/esphome/issues/issues/4529#issuecomment-1574805319
-  # - rx_pin: GPIO3 # Will end up being assigned UART0
-  #   baud_rate: 4800
-  #   id: dummy_uart 
-  - rx_pin: GPIO20 # Will end up being assigned UART1
-    baud_rate: 4800
-    data_bits: 8
-    stop_bits: 1
-    parity: EVEN
-    id: current_uart
+  rx_pin: GPIO20
+  baud_rate: 4800
+  data_bits: 8
+  stop_bits: 1
+  parity: EVEN
 
 globals:
   - id: total_energy
@@ -109,6 +92,7 @@ binary_sensor:
       mode: INPUT_PULLUP
       inverted: true
     name: "Power Button"
+    id: power_button
     disabled_by_default: true
     on_multi_click:
       - timing:
@@ -144,7 +128,6 @@ sensor:
     device_class: ""
 
   - platform: cse7766
-    uart_id: current_uart
     current:
       name: "Current"
       filters:
@@ -165,7 +148,7 @@ sensor:
       id: power_sensor
       filters:
         - throttle_average: ${sensor_update_interval}
-        - lambda: if (x < 3.0) return 0.0; else return x;    #For the chip will report less than 3w power when no load is connected
+        # - lambda: if (x < 3.0) return 0.0; else return x;    #For the chip will report less than 3w power when no load is connected
 
     energy:
       name: "Energy"
@@ -214,6 +197,40 @@ sensor:
     filters:
       - multiply: 0.001
 
+text_sensor:
+  #  Creates a sensor showing when the device was last restarted
+  - platform: template
+    name: 'Last Restart'
+    id: device_last_restart
+    icon: mdi:clock
+    entity_category: diagnostic
+#    device_class: timestamp
+
+  #  Creates a sensor of the uptime of the device, in formatted days, hours, minutes and seconds
+  - platform: template
+    name: "Uptime"
+    entity_category: diagnostic
+    lambda: |-
+      int seconds = (id(uptime_sensor).state);
+      int days = seconds / (24 * 3600);
+      seconds = seconds % (24 * 3600);
+      int hours = seconds / 3600;
+      seconds = seconds % 3600;
+      int minutes = seconds /  60;
+      seconds = seconds % 60;
+      if ( days > 3650 ) {
+        return { "Starting up" };
+      } else if ( days ) {
+        return { (String(days) +"d " + String(hours) +"h " + String(minutes) +"m "+ String(seconds) +"s").c_str() };
+      } else if ( hours ) {
+        return { (String(hours) +"h " + String(minutes) +"m "+ String(seconds) +"s").c_str() };
+      } else if ( minutes ) {
+        return { (String(minutes) +"m "+ String(seconds) +"s").c_str() };
+      } else {
+        return { (String(seconds) +"s").c_str() };
+      }
+    icon: mdi:clock-start
+
 button:
   - platform: restart
     name: "Restart"
@@ -247,31 +264,29 @@ light:
       inverted: true
       number: GPIO6
 
-text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: "IP Address"
-      entity_category: diagnostic
-    ssid:
-      name: "Connected SSID"
-      entity_category: diagnostic
-    mac_address:
-      name: "Mac Address"
-      entity_category: diagnostic
-
 time:
   - platform: sntp
     id: sntp_time
-  # Define the timezone of the device
+    # Define the timezone of the device
     timezone: "${timezone}"
-  # Change sync interval from default 5min to 6 hours
-    update_interval: 360min    
+    # Change sync interval from default 5min to 6 hours (or as set in substitutions)
+    update_interval: ${sntp_update_interval}
+    # Set specific sntp servers to use
+    servers: 
+      - "${sntp_server}"
+    # Publish the time the device was last restarted
+    on_time_sync:
+      then:
+        # Update last restart time, but only once.
+        - if:
+            condition:
+              lambda: 'return id(device_last_restart).state == "";'
+            then:
+              - text_sensor.template.publish:
+                  id: device_last_restart
+                  state: !lambda 'return id(sntp_time).now().strftime("%a %d %b %Y - %I:%M:%S %p");'
 
-api:
-  encryption:
-    key: 2XInEniifXFhFb293ihgRbIyO31vX83Uy9vsxbKYhh4=
 
-  
 # Enable webserver in order to have Prometheus /metrics endpoint
 web_server:
   version: 3

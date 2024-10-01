@@ -1,0 +1,34 @@
+# common wifi and network settings
+dashboard_import:
+  package_import_url: github://teekennedy/home-assistant/esphome/packages/network.yaml
+
+esphome:
+  project:
+    name: "teekennedy.network"
+    version: "1.0.0"
+
+substitutions:
+  # Device name / hostname
+  name: "my-esphome-device"
+
+# https://esphome.io/components/wifi.html#configuration-variables
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  # Allow rapid re-connection to previously connect WiFi SSID
+  fast_connect: true
+  # Define dns domain / suffix to add to hostname
+  domain: ".lan"
+  # Connect to device using its local DNS entry
+  use_address: "${name}.lan"
+
+# Fallback to captive portal after 1 minute of failed wifi connection attempts
+# https://esphome.io/components/captive_portal.html
+captive_portal:
+
+network:
+  enable_ipv6: true
+
+# Disable mDNS - we're using ping to check whether this device is online or not.
+mdns:
+  disabled: true
