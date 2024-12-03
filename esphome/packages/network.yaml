@@ -10,8 +10,12 @@ esphome:
 substitutions:
   # Device name / hostname
   name: "my-esphome-device"
-  # Password for the fallback hotspot
+  # Password for the fallback hotspot.
   wifi_ap_password: null
+  # Encryption key for API communications. Use unique key per host for maximum security.
+  esphome_api_encryption_key: null
+  # Password for OTA updates. Use unique password per host for maximum security.
+  ota_esphome_password: null
 
 # https://esphome.io/components/wifi.html#configuration-variables
 wifi:
@@ -32,9 +36,19 @@ wifi:
 # https://esphome.io/components/captive_portal.html
 captive_portal:
 
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "${esphome_api_encryption_key}"
+
 network:
   enable_ipv6: true
 
 # Disable mDNS - we're using ping to check whether this device is online or not.
 mdns:
   disabled: true
+
+ota:
+  - platform: esphome
+    id: ota_esphome
+    password: "${ota_esphome_password}"
