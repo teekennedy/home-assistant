@@ -10,6 +10,8 @@ esphome:
 substitutions:
   # Device name / hostname
   name: "my-esphome-device"
+  # Password for the fallback hotspot
+  wifi_ap_password: null
 
 # https://esphome.io/components/wifi.html#configuration-variables
 wifi:
@@ -21,7 +23,11 @@ wifi:
   domain: ".lan"
   # Connect to device using its local DNS entry
   use_address: "${name}.lan"
-
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${name}"
+    password: "${wifi_ap_password}"
+    
 # Fallback to captive portal after 1 minute of failed wifi connection attempts
 # https://esphome.io/components/captive_portal.html
 captive_portal:
