@@ -82,6 +82,12 @@ sensor:
     entity_category: diagnostic
     internal: true
 
+  #  Creates a sensor showing when the device was last restarted
+  - platform: uptime
+    type: timestamp
+    name: 'Last Restart'
+    id: device_last_restart
+
   # Reports the WiFi signal strength/RSSI in dB
   - platform: wifi_signal
     name: "WiFi Signal dB"
@@ -188,13 +194,6 @@ light:
     pin:
       inverted: true
       number: GPIO13
-
-text_sensor:
-  #  Creates a sensor showing when the device was last restarted
-  - platform: uptime
-    type: timestamp
-    name: 'Last Restart'
-    id: device_last_restart
 
 time:
   - platform: homeassistant
