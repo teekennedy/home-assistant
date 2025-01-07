@@ -25,8 +25,6 @@ wifi:
   fast_connect: true
   # Define dns domain / suffix to add to hostname
   domain: ".lan"
-  # Connect to device using its local DNS entry
-  use_address: "${name}.lan"
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "${name}"
