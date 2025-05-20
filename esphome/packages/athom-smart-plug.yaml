@@ -44,6 +44,10 @@ esphome:
     board_build.variant: esp32c3
     board_build.flash_mode: dio
 
+# Disable automatic restart when device can't reach home assistant
+api:
+  reboot_timeout: 0s
+
 esp32:
   board: esp32-c3-devkitm-1
   flash_size: 4MB
