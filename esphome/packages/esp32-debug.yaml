@@ -1,0 +1,35 @@
+# https://esphome.io/components/debug.html
+# Debug info for esp32
+dashboard_import:
+  package_import_url: github://teekennedy/home-assistant/esphome/packages/esp32-debug.yaml
+
+esphome:
+  project:
+    name: "teekennedy.esp32-debug"
+    version: "1.0.0"
+
+substitutions:
+  debug_update_interval: 5s
+
+debug:
+  update_interval: "${debug_update_interval}"
+
+text_sensor:
+  - platform: debug
+    id: debug_text
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
+sensor:
+  - platform: debug
+    id: debug_sensor
+    free:
+      name: "Heap Free"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
+    psram:
+      name: "Free PSRAM"
