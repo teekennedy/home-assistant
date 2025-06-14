@@ -95,23 +95,13 @@ sensor:
     update_interval: 60s
     entity_category: diagnostic
 
-  # Reports the WiFi signal strength in %
-  - platform: copy
-    source_id: wifi_signal_db
-    name: "WiFi Signal Percent"
-    filters:
-      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
-    unit_of_measurement: "%"
-    entity_category: diagnostic
-    device_class: ""
-
   - platform: cse7766
     id: athom_cse7766
     current:
       name: "Current"
       filters:
         - throttle_average: ${sensor_update_interval}
-        - lambda: if (x < 0.060) return 0.0; else return x;   #For the chip will report less than 3w power when no load is connected
+        # - lambda: if (x < 0.060) return 0.0; else return x;   #For the chip will report less than 3w power when no load is connected
 
     voltage:
       name: "Voltage"
@@ -123,7 +113,7 @@ sensor:
       id: power_sensor
       filters:
         - throttle_average: ${sensor_update_interval}
-        - lambda: if (x < 3.0) return 0.0; else return x;    #For the chip will report less than 3w power when no load is connected
+        # - lambda: if (x < 3.0) return 0.0; else return x;    #For the chip will report less than 3w power when no load is connected
 
     energy:
       name: "Energy"
