@@ -5,7 +5,7 @@ dashboard_import:
 esphome:
   project:
     name: "teekennedy.network"
-    version: "1.0.0"
+    version: "1.1.0"
 
 substitutions:
   # Device name / hostname
@@ -21,8 +21,11 @@ substitutions:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  # Allow rapid re-connection to previously connect WiFi SSID
+  # Connect to the first AP found that matches configured SSID.
+  # I only have one AP so there's no chance of connecting to a faraway AP.
   fast_connect: true
+  # Do not connect to network unless it's using WPA2 auth or better
+  min_auth_mode: WPA2
   # Define dns domain / suffix to add to hostname
   domain: ".lan"
   # Enable fallback hotspot (captive portal) in case wifi connection fails
