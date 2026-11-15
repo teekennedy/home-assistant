@@ -39,10 +39,6 @@ esphome:
   project:
     name: "${project_name}"
     version: "${project_version}"
-  platformio_options:
-    board_build.mcu: esp32c3
-    board_build.variant: esp32c3
-    board_build.flash_mode: dio
 
 # Disable automatic restart when device can't reach home assistant
 api:
@@ -51,10 +47,15 @@ api:
 esp32:
   board: esp32-c3-devkitm-1
   flash_size: 4MB
+  flash_mode: dio
   variant: ESP32C3
   framework:
     type: arduino
     version: recommended
+    advanced:
+      # Flash chip is detected as generic at boot; skip linking unused vendor
+      # flash drivers to save IRAM.
+      flash_chip: generic
 
 preferences:
   flash_write_interval: 5min
