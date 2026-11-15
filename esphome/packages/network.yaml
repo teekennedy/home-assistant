@@ -3,9 +3,11 @@ dashboard_import:
   package_import_url: github://teekennedy/home-assistant/esphome/packages/network.yaml
 
 esphome:
+  # Required for OTA encryption
+  min_version: 2026.9.0
   project:
     name: "teekennedy.network"
-    version: "1.1.0"
+    version: "1.2.0"
 
 substitutions:
   # Device name / hostname
@@ -14,7 +16,8 @@ substitutions:
   wifi_ap_password: null
   # Encryption key for API communications. Use unique key per host for maximum security.
   esphome_api_encryption_key: null
-  # Password for OTA updates. Use unique password per host for maximum security.
+  # Deprecated: password for OTA updates. Leave null to use OTA encryption with the
+  # API encryption key instead (recommended). See the ota section below.
   ota_esphome_password: null
 
 # https://esphome.io/components/wifi.html#configuration-variables
@@ -49,7 +52,15 @@ network:
 mdns:
   disabled: true
 
+# OTA authentication (https://esphome.io/components/ota/esphome/#encryption):
+# - ota_esphome_password set: legacy password auth (unchanged behavior). Also used for
+#   the first step of migrating to encryption, since ESPHome >= 2026.9.0 firmware
+#   offers encryption while still accepting plaintext ("Encryption: offered,
+#   plaintext accepted" in the device log).
+# - ota_esphome_password null: OTA encryption, reusing the API encryption key.
+# If esphome_api_encryption_key is null, validation of api.encryption.key fails.
 ota:
-  - platform: esphome
-    id: ota_esphome
-    password: "${ota_esphome_password}"
+  - >-
+    ${ {"platform": "esphome", "id": "ota_esphome", "password": ota_esphome_password}
+    if ota_esphome_password else
+    {"platform": "esphome", "id": "ota_esphome", "encryption": None} }
